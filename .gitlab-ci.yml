@@ -1,0 +1,33 @@
+variables:
+  # Enable CNB with Paketo Buildpacks
+  AUTO_DEVOPS_BUILD_IMAGE_CNB_ENABLED: 1
+  AUTO_DEVOPS_BUILD_IMAGE_CNB_BUILDER: gcr.io/paketo-buildpacks/builder:full-cf
+
+  # Customize Java Buildpacks: use JVM 11 and run tests during build
+  AUTO_DEVOPS_BUILD_IMAGE_FORWARDED_CI_VARIABLES: BP_JVM_VERSION=8.*,BP_MAVEN_BUILD_ARGUMENTS=-Dmaven.test.skip=false package
+  # Output HELM debug logs
+  AUTO_DEVOPS_DEPLOY_DEBUG: 1
+  ROLLOUT_RESOURCE_TYPE: deployment
+  POSTGRES_ENABLED: "false"
+  SECURE_LOG_LEVEL: "debug"
+
+cache:
+  paths:
+    - .m2/repository
+
+include:
+  - template: Auto-DevOps.gitlab-ci.yml
+
+
+test:
+  stage: test
+  image: maven:3.6.3-jdk-8
+  needs:
+    - build
+  script:
+    - export MAVEN_CONFIG=
+    - ./mvnw clean dependency:resolve-plugins test
+  artifacts:
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
